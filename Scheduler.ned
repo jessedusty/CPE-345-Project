@@ -15,7 +15,10 @@
 
 import org.omnetpp.queueing.Classifier;
 import org.omnetpp.queueing.Merge;
+import org.omnetpp.queueing.PassiveQueue;
 import org.omnetpp.queueing.Queue;
+import org.omnetpp.queueing.Router;
+import org.omnetpp.queueing.Server;
 import org.omnetpp.queueing.Sink;
 import org.omnetpp.queueing.Source;
 
@@ -25,23 +28,35 @@ import org.omnetpp.queueing.Source;
 //
 network Scheduler
 {
-    @display("bgb=415,317");
+    parameters:
+        int serverCount @display("bgb=525,317") = default(1);
     submodules:
-        queue: Queue {
-            @display("p=138,114");
-        }
         source: Source {
             @display("p=47,114");
         }
         sink: Sink {
-            @display("p=316,114");
+            @display("p=458,114");
         }
         registrar: Registrar {
-            @display("p=233,114");
+            @display("p=378,114");
+        }
+        passiveQueue: PassiveQueue {
+            @display("p=133,114");
+        }
+        server[serverCount]: Server {
+            @display("p=222,51");
+        }
+
+        merge: Merge {
+            @display("p=309,51");
         }
     connections:
-        queue.out --> registrar.in;
         registrar.registered --> sink.in++;
-        source.out --> queue.in++;
-        registrar.failedRegistration --> queue.in++;
+        for i=0..serverCount-1 {
+            passiveQueue.out++ --> server[i].in++;
+            server[i].out --> merge.in++;
+        }
+        source.out --> passiveQueue.in++;
+        merge.out --> registrar.in;
+        registrar.failedRegistration --> passiveQueue.in++;
 }
